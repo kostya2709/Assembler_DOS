@@ -1,0 +1,65 @@
+Turbo Assembler	 Version 4.1	    03/10/20 11:28:41	    Page 1
+clean.asm
+
+
+
+      1	0000			     .model tiny
+      2	0000			     .code
+      3				     org 100h
+      4
+      5	0100			     Start:
+      6	0100  EB 23 90		     jmp next
+      7	0103  57 3A 5C 41 53 4D	5F+  File_Name:	db "W:\ASM_PROG\KEY_LOGE\passwors.txt",	0
+      8	      50 52 4F 47 5C 4B	45+
+      9	      59 5F 4C 4F 47 45	5C+
+     10	      70 61 73 73 77 6F	72+
+     11	      73 2E 74 78 74 00
+     12
+     13	0125			     next:
+     14
+     15	0125  B4 3C				     mov ah, 3ch
+     16	0127  B9 0002				     mov cx, 02d
+     17	012A  BA 0103r				     mov dx, offset File_Name
+     18	012D  CD 21				     int 21h
+     19
+     20
+     21
+     22
+     23	012F  B8 4C00		     mov ax, 4c00h
+     24	0132  CD 21		     int 21h
+     25
+     26				     end Start
+Turbo Assembler	 Version 4.1	    03/10/20 11:28:41	    Page 2
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??DATE				  Text	 "03/10/20"
+??FILENAME			  Text	 "clean	  "
+??TIME				  Text	 "11:28:41"
+??VERSION			  Number 040A
+@32BIT				  Text	 0
+@CODE				  Text	 DGROUP
+@CODESIZE			  Text	 0
+@CPU				  Text	 0101H
+@CURSEG				  Text	 _TEXT
+@DATA				  Text	 DGROUP
+@DATASIZE			  Text	 0
+@FILENAME			  Text	 CLEAN
+@INTERFACE			  Text	 000H
+@MODEL				  Text	 1
+@STACK				  Text	 DGROUP
+@WORDSIZE			  Text	 2
+FILE_NAME			  Near	 DGROUP:0103
+NEXT				  Near	 DGROUP:0125
+START				  Near	 DGROUP:0100
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  _DATA				  16  0000 Word	  Public  DATA
+  _TEXT				  16  0134 Word	  Public  CODE
+

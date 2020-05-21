@@ -1,0 +1,464 @@
+Turbo Assembler	 Version 4.1	    02/29/20 17:04:09	    Page 1
+draw_lib.asm
+
+
+
+      1	0000			     .model tiny
+      2				     locals @@
+      3	0000			     .code
+      4				     .186
+      5				     extrn strlen:proc
+      6
+      7				     public Draw_Pixel
+      8				     public Printf
+      9				     public Draw_Column
+     10				     public Draw_Line
+     11				     public Draw_Rect
+     12				     public Draw_Shadow_Rect
+     13				     public Draw_Frame
+     14
+     15				     ;+++++++++++++++++++++++++++++++++++ DRAW_PIXEL +++++++++++++++++++++++++++++++
+     16				     ;	     Draws a point in (x, y). Inserts symbols with particular color.
+     17				     ;		     Entry:
+     18				     ;				     ES	- video	memory
+     19				     ;				     AL	- symbol
+     20				     ;				     AH	- color
+     21				     ;				     BL	- start_x
+     22				     ;				     BH	- start_y
+     23				     ;		     Destr:  DX, DI
+     24				     ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     25
+     26	0000					     Draw_Pixel	proc
+     27
+     28	0000  50 53 56				     push ax bx	si
+     29	0003  8B F3				     mov si, bx
+     30	0005  81 E6 00FF			     and si, 255
+     31	0009  B3 00				     mov bl, 0d
+     32	000B  C1 EB 08				     shr bx, 8
+     33	000E  B8 0050				     mov ax, 80d
+     34	0011  F7 E3				     mul bx
+     35	0013  03 C6				     add ax, si
+     36	0015  D1 E0				     shl ax, 1
+     37	0017  8B F8				     mov di, ax
+     38	0019  5E 5B 58				     pop si bx ax
+     39
+     40	001C  AB				     stosw
+     41
+     42	001D  C3				     ret
+     43	001E					     endp
+     44
+     45				     ;+++++++++++++++++++++++++++++++++++ DRAW_COLUMN +++++++++++++++++++++++++++++++
+     46				     ;	     Draws a vertical line between points (start_x, start_y), (start_x,	;start_y + height). +
+     47				     Inserts symbols with particular color.
+     48				     ;		     Entry:
+     49				     ;				     ES	- video	memory
+     50				     ;				     AL	- symbol
+     51				     ;				     AH	- color
+     52				     ;				     BL	- start_x
+     53				     ;				     BH	- start_y
+     54				     ;				     CH	- height
+     55				     ;		     Destr:  CX, DX, DI
+     56				     ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     57
+Turbo Assembler	 Version 4.1	    02/29/20 17:04:09	    Page 2
+draw_lib.asm
+
+
+
+     58	001E					     Draw_Column proc
+     59
+     60	001E  50 53 53				     push ax bx	bx
+     61	0021  B8 0050				     mov ax, 80
+     62	0024  C1 EB 08				     shr bx, 8
+     63	0027  F7 E3				     mul bx
+     64	0029  5B				     pop bx
+     65	002A  81 E3 00FF			     and bx, 255
+     66	002E  03 C3				     add ax, bx
+     67	0030  D1 E0				     shl ax, 1
+     68	0032  8B F8				     mov di, ax
+     69	0034  5B 58				     pop bx ax
+     70
+     71	0036  C1 E9 08				     shr cx, 8
+     72
+     73	0039					     @@Cycle:
+     74	0039  AB				     stosw
+     75	003A  81 C7 009E			     add di, 158
+     76	003E  E2 F9				     loop @@Cycle
+     77
+     78	0040  C3				     ret
+     79	0041					     endp
+     80
+     81				     ;+++++++++++++++++++++++++++++++++++ DRAW_LINE +++++++++++++++++++++++++++++++
+     82				     ;	     Draws a horizontal	line between points (start_x, start_y),	(start_x + length,	    +
+     83				     ;start_y).	Inserts	symbols	with particular	color. If symbol = 0 symbol is not changed.
+     84				     ;		     Entry:
+     85				     ;				     ES	- video	memory
+     86				     ;				     AL	- symbol
+     87				     ;				     AH	- color
+     88				     ;				     BL	- start_x
+     89				     ;				     BH	- start_y
+     90				     ;				     CL	- length
+     91				     ;		     Destr:  DX, DI, CX
+     92				     ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     93
+     94	0041					     Draw_Line proc
+     95
+     96	0041  FC				     cld
+     97
+     98	0042  50 53 53				     push ax bx	bx
+     99	0045  B8 0050				     mov ax, 80
+    100	0048  C1 EB 08				     shr bx, 8
+    101	004B  F7 E3				     mul bx
+    102	004D  5B				     pop bx
+    103	004E  81 E3 00FF			     and bx, 255
+    104	0052  03 C3				     add ax, bx
+    105	0054  D1 E0				     shl ax, 1
+    106	0056  8B F8				     mov di, ax
+    107	0058  5B 58				     pop bx ax
+    108
+    109	005A  3C FF				     cmp al, -1
+    110	005C  74 05				     je	No_Sym
+    111
+    112	005E  F3> AB				     rep stosw
+    113	0060  EB 0A 90				     jmp Exit
+    114
+Turbo Assembler	 Version 4.1	    02/29/20 17:04:09	    Page 3
+draw_lib.asm
+
+
+
+    115	0063					     No_Sym:
+    116	0063  47				     inc di
+    117	0064					     @@Cycle:
+    118	0064  26: 88 25				     mov byte ptr es:[di], ah
+    119	0067  83 C7 02				     add di, 2
+    120	006A  E2 F8				     loop @@Cycle
+    121
+    122
+    123	006C					     Exit:
+    124	006C  C3					     ret
+    125	006D						     endp
+    126
+    127				     ;+++++++++++++++++++++++++++++++++++ Draw_Rect +++++++++++++++++++++++++++++++
+    128				     ;	     Draws a rectangle with left top point (start_x, start_y) with width and height. Inserts+
+    129				     symbols with particular color. If symbol =	0 symbol is not	changed.
+    130				     ;		     Entry:
+    131				     ;				     ES	- video	memory
+    132				     ;				     AL	- symbol
+    133				     ;				     AH	- color
+    134				     ;				     BL	- start_x
+    135				     ;				     BH	- start_y
+    136				     ;				     CL	- length
+    137				     ;				     CH	- height
+    138				     ;		     Destr:  DX, DI, BH
+    139				     ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    140
+    141	006D					     Draw_Rect proc
+    142
+    143
+    144	006D  8B D1				     mov dx, cx
+    145	006F  B5 00				     mov ch, 0
+    146
+    147	0071					     @@Cycle:
+    148
+    149	0071  80 FE 00				     cmp dh, 0
+    150	0074  74 0D				     je	@@Exit
+    151	0076  52				     push dx
+    152	0077  E8 FFC7				     call Draw_Line
+    153	007A  5A				     pop dx
+    154	007B  8A CA				     mov cl, dl
+    155	007D  FE C7				     inc bh
+    156	007F  FE CE				     dec dh
+    157	0081  EB EE				     jmp @@Cycle
+    158
+    159	0083					     @@Exit:
+    160
+    161	0083  C3				     ret
+    162	0084					     endp
+    163
+    164
+    165				     ;++++++++++++++++++++++++++++++++++++++++PRINTF+++++++++++++++++++++++++++++++++
+    166				     ;	     Draws a message in	point (start_x,	start_y). Inserts symbols with a particular ;color.
+    167				     ;		     Entry:
+    168				     ;				     ES	- video	memory
+    169				     ;				     AL	- color
+    170				     ;				     BL	- start_x
+    171				     ;				     BH	- start_y
+Turbo Assembler	 Version 4.1	    02/29/20 17:04:09	    Page 4
+draw_lib.asm
+
+
+
+    172				     ;				     SI	- pointer to the text
+    173				     ;		     Destr:  DX, DI, BX, SI
+    174				     ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    175
+    176	0084					     Printf proc
+    177
+    178	0084  8B D0					     mov dx, ax
+    179	0086  B0 50					     mov al, 80
+    180	0088  F6 E7					     mul bh
+    181	008A  02 C3					     add al, bl
+    182	008C  D1 E0					     shl ax, 1
+    183	008E  8B F8					     mov di, ax
+    184	0090  8B C2					     mov ax, dx
+    185
+    186	0092  57 56				     push di si
+    187	0094  33 DB				     xor bx, bx
+    188	0096					     @@Cycle:
+    189	0096  8B 1C				     mov bx, ds:[si]
+    190	0098  80 FB 00				     cmp bl, 0
+    191	009B  74 07				     je	@@Exit
+    192	009D  A4				     movsb
+    193	009E  26: 88 05				     mov byte ptr es:[di], al
+    194	00A1  47				     inc di
+    195	00A2  EB F2				     jmp @@Cycle
+    196
+    197	00A4					     @@Exit:
+    198	00A4  5E 5F				     pop si di
+    199	00A6  C3				     ret
+    200	00A7					     endp
+    201
+    202				     ;+++++++++++++++++++++++++++++++++++ Draw_Shadow_Rect +++++++++++++++++++++++++++++++
+    203				     ;	     Draws a rectangle with shadow with	left top point (start_x, start_y) with width and    +
+    204				     height. Inserts symbols with particular color. If symbol =	0 symbol is not	changed.
+    205				     ;		     Entry:
+    206				     ;				     ES	- video	memory
+    207				     ;				     AL	- symbol
+    208				     ;				     AH	- color
+    209				     ;				     BL	- start_x
+    210				     ;				     BH	- start_y
+    211				     ;				     CL	- length
+    212				     ;				     CH	- height
+    213				     ;				     SI	- pointer to the title
+    214				     ;				     BP	- pointer to the text
+    215				     ;		     Destr:  AX, BX, CX, DX, DI
+    216				     ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    217	00A7  ????				     Tittle_Size dw ?
+    218	00A9  ????				     Text_Size dw ?
+    219
+    220	00AB					     Draw_Shadow_Rect proc
+    221
+    222
+    223	00AB  50 53 51					     push ax bx	cx
+    224	00AE  B4 70					     mov ah, 70h
+    225	00B0  B0 FF					     mov al, -1
+    226	00B2  80 C3 02					     add bl, 2
+    227	00B5  FE C7					     inc bh
+    228	00B7  E8 FFB3					     call Draw_Rect
+Turbo Assembler	 Version 4.1	    02/29/20 17:04:09	    Page 5
+draw_lib.asm
+
+
+
+    229	00BA  59 5B 58					     pop cx bx ax
+    230
+    231	00BD  51 53					     push cx bx
+    232	00BF  E8 FFAB					     call Draw_Rect
+    233	00C2  5B 59					     pop bx cx
+    234
+    235	00C4  B0 CD					     mov al, 0cdh	     ;Top Line
+    236	00C6  51					     push cx
+    237	00C7  B5 00					     mov ch, 0
+    238	00C9  53					     push bx
+    239	00CA  E8 FF74					     call Draw_Line
+    240	00CD  5B					     pop bx
+    241	00CE  59					     pop cx
+    242
+    243	00CF  51					     push cx			     ;Bottom Line
+    244	00D0  53					     push bx
+    245	00D1  02 FD					     add bh, ch
+    246	00D3  FE CF					     dec bh
+    247	00D5  32 ED					     xor ch, ch
+    248	00D7  E8 FF67					     call Draw_Line
+    249	00DA  5B					     pop bx
+    250	00DB  59					     pop cx
+    251
+    252	00DC  B0 BA					 mov al, 0bah		     ;Left Column
+    253	00DE  51					     push cx
+    254	00DF  53					     push bx
+    255	00E0  E8 FF3B					     call Draw_Column
+    256	00E3  5B					     pop bx
+    257	00E4  59					     pop cx
+    258
+    259	00E5  51					     push cx			     ;Right Column
+    260	00E6  53					     push bx
+    261	00E7  02 D9					     add bl, cl
+    262	00E9  FE CB					     dec bl
+    263	00EB  E8 FF30					     call Draw_Column
+    264	00EE  5B					     pop bx
+    265	00EF  59					     pop cx
+    266
+    267	00F0  52 50 53 53				     push dx ax	bx bx			     ;print title
+    268	00F4  8B D0					     mov dx, ax
+    269	00F6  8B FE					     mov di, si
+    270	00F8  E8 0000e					     call strlen
+    271	00FB  5B					     pop bx
+    272	00FC  51					     push cx
+    273	00FD  2A C8					     sub cl, al
+    274	00FF  D0 E9					     shr cl, 1
+    275	0101  02 D9					     add bl, cl
+    276	0103  8B C2					     mov ax, dx
+    277	0105  C1 E8 08					     shr ax, 8
+    278	0108  56					     push si
+    279	0109  E8 FF78					     call Printf
+    280	010C  5E 59 5B 58 5A				     pop si cx bx ax dx
+    281
+    282	0111  52 50 53 53				     push dx ax	bx bx			     ;print text
+    283	0115  8B D0					     mov dx, ax
+    284	0117  8B FD					     mov di, bp
+    285	0119  E8 0000e					     call strlen
+Turbo Assembler	 Version 4.1	    02/29/20 17:04:09	    Page 6
+draw_lib.asm
+
+
+
+    286	011C  5B					     pop bx
+    287	011D  51					     push cx
+    288	011E  2A C8					     sub cl, al
+    289	0120  D0 E9					     shr cl, 1
+    290	0122  02 D9					     add bl, cl
+    291
+    292	0124  D0 ED					     shr ch, 1
+    293	0126  02 FD					     add bh, ch
+    294	0128  8B C2					     mov ax, dx
+    295	012A  C1 E8 08					     shr ax, 8
+    296	012D  56					     push si
+    297	012E  8B F5					     mov si, bp
+    298	0130  E8 FF51					     call Printf
+    299	0133  5E 59 5B 58 5A				     pop si cx bx ax dx
+    300
+    301	0138  B0 C9					     mov al, 0c9h	     ;Top left angle
+    302	013A  E8 FEC3					     call Draw_Pixel
+    303
+    304	013D  B0 BB					     mov al, 0bbh	     ;Top right	angle
+    305	013F  02 D9					     add bl, cl
+    306	0141  FE CB					     dec bl
+    307	0143  E8 FEBA					     call Draw_Pixel
+    308	0146  FE C3					     inc bl
+    309	0148  2A D9					     sub bl, cl
+    310
+    311	014A  B0 C8					     mov al, 0c8h	     ;Bottom left angle
+    312	014C  02 FD					     add bh, ch
+    313	014E  FE CF					     dec bh
+    314	0150  E8 FEAD					     call Draw_Pixel
+    315	0153  FE C7					     inc bh
+    316	0155  2A FD					     sub bh, ch
+    317
+    318
+    319	0157  B0 BC					     mov al, 0bch	     ;Bottom right angle
+    320	0159  02 D9					     add bl, cl
+    321	015B  FE CB					     dec bl
+    322	015D  02 FD					     add bh, ch
+    323	015F  80 EF 01					     sub bh, 1
+    324	0162  E8 FE9B					     call Draw_Pixel
+    325	0165  FE C7					     inc bh
+    326	0167  2A FD					     sub bh, ch
+    327	0169  FE C3					     inc bl
+    328	016B  2A D9					     sub bl, cl
+    329
+    330	016D  C3				     ret
+    331	016E					     endp
+    332
+    333				     ;+++++++++++++++++++++++++++++++++++DRAW_FRAME+++++++++++++++++++++++++++++++
+    334				     ;	     Draws a rectangle with shadow with	left top point (start_x, start_y) with width and    +
+    335				     height. Inserts symbols with particular color. If symbol =	0 symbol is not	changed.
+    336				     ;		     Entry:
+    337				     ;				     ES	- video	memory
+    338				     ;				     AL	- symbol
+    339				     ;				     AH	- color
+    340				     ;				     BL	- start_x
+    341				     ;				     BH	- start_y
+    342				     ;				     CL	- length
+Turbo Assembler	 Version 4.1	    02/29/20 17:04:09	    Page 7
+draw_lib.asm
+
+
+
+    343				     ;				     CH	- height
+    344				     ;				     SI	- pointer to the title
+    345				     ;				     BP	- pointer to the text
+    346				     ;		     Destr:  DX, DI
+    347				     ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    348
+    349	016E					     Draw_Frame	proc
+    350
+    351	016E  BA 0006				     mov dx, 6
+    352	0171					     @@Cycle:
+    353	0171  50 53 51 52			     push ax bx	cx dx
+    354	0175  E8 FF33				     call Draw_Shadow_Rect
+    355	0178  5A 59 5B 58			     pop dx cx bx ax
+    356
+    357
+    358	017C  80 EB 02				     sub bl, 2
+    359	017F  80 EF 01				     sub bh, 1
+    360	0182  80 C1 04				     add cl, 4
+    361	0185  80 C5 02				     add ch, 2
+    362
+    363	0188  50 51 52				     push ax cx	dx
+    364	018B  B4 86				     mov ah, 86h
+    365	018D  B9 0001				     mov cx, 1
+    366	0190  BA 8000				     mov dx, 8000h
+    367	0193  CD 15				     int 15h
+    368	0195  5A 59 58				     pop dx cx ax
+    369
+    370	0198  4A				     dec dx
+    371
+    372	0199  83 FA 00				     cmp dx, 0
+    373	019C  77 D3				     ja	@@Cycle
+    374
+    375	019E  C3				     ret
+    376	019F					     endp
+    377
+    378
+    379				     end
+Turbo Assembler	 Version 4.1	    02/29/20 17:04:09	    Page 8
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??DATE				  Text	 "02/29/20"
+??FILENAME			  Text	 "draw_lib"
+??TIME				  Text	 "17:04:09"
+??VERSION			  Number 040A
+@32BIT				  Text	 0
+@@CYCLE				  Near	 DGROUP:0039
+@@CYCLE				  Near	 DGROUP:0064
+@@CYCLE				  Near	 DGROUP:0071
+@@CYCLE				  Near	 DGROUP:0096
+@@CYCLE				  Near	 DGROUP:0171
+@@EXIT				  Near	 DGROUP:0083
+@@EXIT				  Near	 DGROUP:00A4
+@CODE				  Text	 DGROUP
+@CODESIZE			  Text	 0
+@CPU				  Text	 0103H
+@CURSEG				  Text	 _TEXT
+@DATA				  Text	 DGROUP
+@DATASIZE			  Text	 0
+@FILENAME			  Text	 DRAW_LIB
+@INTERFACE			  Text	 000H
+@MODEL				  Text	 1
+@STACK				  Text	 DGROUP
+@WORDSIZE			  Text	 2
+DRAW_COLUMN			  Near	 DGROUP:001E
+DRAW_FRAME			  Near	 DGROUP:016E
+DRAW_LINE			  Near	 DGROUP:0041
+DRAW_PIXEL			  Near	 DGROUP:0000
+DRAW_RECT			  Near	 DGROUP:006D
+DRAW_SHADOW_RECT		  Near	 DGROUP:00AB
+EXIT				  Near	 DGROUP:006C
+NO_SYM				  Near	 DGROUP:0063
+PRINTF				  Near	 DGROUP:0084
+STRLEN				  Near	 DGROUP:---- Extern
+TEXT_SIZE			  Word	 DGROUP:00A9
+TITTLE_SIZE			  Word	 DGROUP:00A7
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  _DATA				  16  0000 Word	  Public  DATA
+  _TEXT				  16  019F Word	  Public  CODE
+

