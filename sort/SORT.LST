@@ -1,0 +1,181 @@
+Turbo Assembler	 Version 4.1	    05/21/20 07:26:46	    Page 1
+sort.asm
+
+
+
+      1	0000			     .model tiny
+      2	0000			     .data
+      3	0000  0004 0003	0002 0001    array dw 4, 3, 2, 1
+      4	0008  0004		     size dw 4
+*Warning* sort.asm(4) Reserved word used as symbol: SIZE
+      5	000A  0A*(????)		     new_array dw 10 dup (?)
+      6	001E			     .code
+      7				     locals @@
+      8				     org 100h
+      9
+     10	0100			     Start:
+     11
+     12	0100  BE 000Ar				     lea si, new_array
+     13	0103  E8 003C				     call Read_CMD
+     14
+     15	0106  BF 000Ar				     lea di, new_array
+     16	0109  E8 0005				     call sort
+     17
+     18	010C  B8 4C00				     mov ax, 4c00h
+     19	010F  CD 21				     int 21h
+     20
+     21				     ;-----------------------------SORT---------------------------
+     22				     ; This function sort an array using bubble	sort.
+     23				     ;	     Input:
+     24				     ;		     CX	- number of elements
+     25				     ;		     DI	- pointer to the array
+     26				     ;	     Destr:
+     27				     ;		     AX, BX, DX
+     28				     ;------------------------------------------------------------
+     29
+     30	0111							     sort proc
+     31
+     32	0111  83 E9 01						     sub cx, 1
+     33	0114  BA 0000						     mov dx, 0
+     34
+     35	0117							     @@Cycle1:
+     36	0117  8B DF						     mov bx, di
+     37	0119  8B C7						     mov ax, di
+     38	011B  03 C1						     add ax, cx
+     39	011D  03 C1						     add ax, cx
+     40	011F								     @@Cycle2:
+     41	011F  26: 8B 17							     mov dx, word ptr es:[bx]
+     42	0122  26: 3B 57	02						     cmp dx, word ptr es:[bx+2]
+     43	0126  76 10							     jbe @@next
+     44	0128  26: 8B 57	02						     mov dx, word ptr es:[bx+2]
+     45	012C  50							     push ax
+     46	012D  26: 8B 07							     mov ax, word ptr es:[bx]
+     47	0130  26: 89 17							     mov word ptr es:[bx], dx
+     48	0133  26: 89 47	02						     mov word ptr es:[bx+2], ax
+     49	0137  58							     pop ax
+     50	0138								     @@next:
+     51	0138  83 C3 02							     add bx, 2
+     52	013B  3B D8							     cmp bx, ax
+     53	013D  72 E0							     jb	@@Cycle2
+     54
+     55	013F  E2 D6						     loop @@Cycle1
+     56
+Turbo Assembler	 Version 4.1	    05/21/20 07:26:46	    Page 2
+sort.asm
+
+
+
+     57	0141  C3						     ret
+     58	0142							     endp
+     59
+     60				     ;---------------------------READ_CMD-------------------------------
+     61				     ; Reads numbers from CMD.
+     62				     ;	     Input:
+     63				     ;		     SI	- pointer to the string	where to write elements	to.
+     64				     ;	     Destr:
+     65				     ;		     AX, BX, DX, DI
+     66				     ;	     Output:
+     67				     ;		     CX	- number of elements
+     68				     ;------------------------------------------------------------------
+     69
+     70	0142					     Read_CMD proc
+     71
+     72	0142  33 C9				     xor cx, cx
+     73	0144  8A 0E 0080			     mov cl, byte ptr ds:[80h]		     ;num of command line args
+     74	0148  83 E9 01				     sub cx, 1
+     75
+     76	014B  50 55 8B EC C7 46	02+		     push 0
+     77	      0000 5D
+     78	0155  33 DB				     xor bx, bx
+     79	0157  BF 0082				     mov di, 82h
+     80
+     81	015A					     @@Cycle:
+     82
+     83	015A  80 3D 20				     cmp byte ptr [di],	20h
+     84	015D  74 17				     je	@@End_Num
+     85	015F  B8 000A				     mov ax, 10d
+     86	0162  F7 E3				     mul bx
+     87	0164  8B D8				     mov bx, ax
+     88	0166  8A 05				     mov byte ptr al, [di]
+     89	0168  2D 0030				     sub ax, 30h
+     90	016B  03 D8				     add bx, ax
+     91	016D  47				     inc di
+     92	016E  83 F9 01				     cmp cx, 1
+     93	0171  74 03				     je	@@End_Num
+     94	0173  EB 12 90				     jmp @@ToLoop
+     95
+     96	0176					     @@End_Num:
+     97	0176  2E: 89 1C				     mov word ptr cs:[si], bx
+     98	0179  83 C6 02				     add si, 2
+     99	017C  47				     inc di
+    100	017D  58				     pop ax
+    101	017E  40				     inc ax
+    102	017F  50				     push ax
+    103	0180  33 DB				     xor bx, bx
+    104	0182  83 F9 01				     cmp cx, 1
+    105	0185  74 02				     je	@@End
+    106	0187					     @@ToLoop:
+    107	0187  E2 D1				     loop @@Cycle
+    108	0189					     @@End:
+    109
+    110	0189  59				     pop cx
+    111
+    112	018A  C3				     ret
+    113	018B					     endp
+Turbo Assembler	 Version 4.1	    05/21/20 07:26:46	    Page 3
+sort.asm
+
+
+
+    114
+    115				     end Start
+Turbo Assembler	 Version 4.1	    05/21/20 07:26:46	    Page 4
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??DATE				  Text	 "05/21/20"
+??FILENAME			  Text	 "sort	  "
+??TIME				  Text	 "07:26:46"
+??VERSION			  Number 040A
+@32BIT				  Text	 0
+@@CYCLE				  Near	 DGROUP:015A
+@@CYCLE1			  Near	 DGROUP:0117
+@@CYCLE2			  Near	 DGROUP:011F
+@@END				  Near	 DGROUP:0189
+@@END_NUM			  Near	 DGROUP:0176
+@@NEXT				  Near	 DGROUP:0138
+@@TOLOOP			  Near	 DGROUP:0187
+@CODE				  Text	 DGROUP
+@CODESIZE			  Text	 0
+@CPU				  Text	 0101H
+@CURSEG				  Text	 _TEXT
+@DATA				  Text	 DGROUP
+@DATASIZE			  Text	 0
+@FILENAME			  Text	 SORT
+@INTERFACE			  Text	 000H
+@MODEL				  Text	 1
+@STACK				  Text	 DGROUP
+@WORDSIZE			  Text	 2
+ARRAY				  Word	 DGROUP:0000
+NEW_ARRAY			  Word	 DGROUP:000A
+READ_CMD			  Near	 DGROUP:0142
+SIZE				  Word	 DGROUP:0008
+SORT				  Near	 DGROUP:0111
+START				  Near	 DGROUP:0100
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  _DATA				  16  001E Word	  Public  DATA
+  _TEXT				  16  018B Word	  Public  CODE
+Turbo Assembler	 Version 4.1	    05/21/20 07:26:46	    Page 5
+Error Summary
+
+
+
+*Warning* sort.asm(4) Reserved word used as symbol: SIZE
+
