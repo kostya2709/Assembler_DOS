@@ -133,13 +133,13 @@ endp
 ;-----------------------------STRCMP--------------------------------------
 ;The program compares two strings up to '\0' symbol.
 ;
-;		Entry:	ES - segment with the first string
+;		Entry:		ES - segment with the first string
 ;				DI - pointer to the string in the segment
 ;				DS - segment with the second string
 ;				SI - pointer to the second string
 ;		
-;		Return value:
-; Returns value in DI: value is equal zero if the strings are equal.
+;		Return value:   AX - result
+; Returns value in AX: value is equal zero if the strings are equal.
 ; Value is above zero if the first string is higher (lexicographically),
 ; and below zero if not.
 ;
@@ -147,18 +147,20 @@ endp
 strcmp proc
 
 cld
+		mov ax, 0
 @@Cycle:
-		cmpsb
-		jne @@End
-		je @@Check_End
-		jmp @@Cycle
-
-@@Check_End:
 		cmp byte ptr ds:[si], 0
-		je @@End
-		jmp @@Cycle
+		je @End
+		cmpsb
+		je @@Cycle
+		jmp @@Not_equal
 
+@@Not_equal:
+		mov ax, es:[di-1]
+		sub ax, ds:[si-1]
+		sub ax, es:[di]
 @@End:
+		add ax, es:[di]
 ret
 endp
 ;--------------------------------------------------------------------------
